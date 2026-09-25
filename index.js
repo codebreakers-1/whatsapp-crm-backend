@@ -46,15 +46,23 @@ async function connectToWhatsApp() {
     sock.ev.on('messages.upsert', async (m) => {
         const msg = m.messages[0];
         if (!msg.key.fromMe && m.type === 'notify') {
-            const senderPhone = msg.key.remoteJid;
-            const messageText = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "Media/Other Message";
+            const senderJid = msg.key.remoteJid;
             
-            allMessages.push({
-                phone: senderPhone,
-                text: messageText,
-                sender: 'client',
-                time: new Date().toLocaleTimeString()
-            });
+            // Sirf personal chats allow karein, groups aur status bilkul ignore kar dein
+            if (senderJid && senderJid.endsWith('@s.whatsapp.net')) {
+                const messageText = msg.message?.conversation || msg.message?.extendedTextMessage?.text;
+                
+                // Agar text message ho tabhi save karein
+                if (messageText) {
+                    const cleanPhone = senderJid.replace('@s.whatsapp.net', '');
+                    allMessages.push({
+                        phone: cleanPhone,
+                        text: messageText,
+                        sender: 'client',
+                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    });
+                }
+            }
         }
     });
 }
@@ -73,16 +81,17 @@ app.get('/', (req, res) => {
 });
 
 app.post('/send-message', async (req, res) => {
-    const { phone, message } = req.body;
+    let { phone, message } = req.body;
     try {
         const jid = phone.includes('@s.whatsapp.net') ? phone : `${phone}@s.whatsapp.net`;
         await sock.sendMessage(jid, { text: message });
         
+        const cleanPhone = phone.replace('@s.whatsapp.net', '');
         allMessages.push({
-            phone: jid,
+            phone: cleanPhone,
             text: message,
             sender: 'agent',
-            time: new Date().toLocaleTimeString()
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         });
 
         res.json({ success: true, message: "Message sent!" });
