@@ -14,7 +14,7 @@ let latestQR = "";
 let connectionStatus = "Connecting...";
 
 // Store initialize karna taake purane chats aur messages save rahein
-const store = makeInMemorystore({});
+const store = makeInMemoryStore({});
 // Agar pehle ki file mojood ho toh load kar lo
 if (fs.existsSync('./baileys_store.json')) {
     store.readFromFile('./baileys_store.json');
